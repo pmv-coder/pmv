@@ -1,0 +1,1908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PROSPHERO MEGALOS VENTURES - POS & Management System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              blue: '#0B2545',
+              navy: '#134074',
+              gold: '#C59B27',
+              goldlight: '#EEA243',
+              dark: '#0B0F19',
+              darkcard: '#111827',
+              darkborder: '#1F2937'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @media print {
+      body * { visibility: hidden !important; }
+      #printable-receipt, #printable-receipt * { visibility: visible !important; }
+      #printable-receipt { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; display: block !important; }
+    }
+
+    /* Hide media projection view on main display */
+    #hdmi-projection-screen {
+      display: none;
+    }
+
+    /* HDMI Secondary Display / TV Display Mode */
+    @media screen and (min-width: 1920px) and (display-mode: standalone), screen and (min-width: 1280px) and (aspect-ratio: 16/9) {
+      body.hdmi-tv-mode #app-header,
+      body.hdmi-tv-mode #app-main,
+      body.hdmi-tv-mode #app-gateway,
+      body.hdmi-tv-mode #modal-scanner,
+      body.hdmi-tv-mode #modal-manual-staff,
+      body.hdmi-tv-mode #modal-product {
+        display: none !important;
+      }
+
+      body.hdmi-tv-mode #hdmi-projection-screen {
+        display: flex !important;
+      }
+    }
+
+    /* Forced TV Display Overlay Mode */
+    body.force-tv-display #app-header,
+    body.force-tv-display #app-main,
+    body.force-tv-display #app-gateway,
+    body.force-tv-display #modal-scanner,
+    body.force-tv-display #modal-manual-staff,
+    body.force-tv-display #modal-product {
+      display: none !important;
+    }
+
+    body.force-tv-display #hdmi-projection-screen {
+      display: flex !important;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 dark:bg-brand-dark font-sans antialiased text-gray-800 dark:text-gray-100 min-h-screen flex flex-col relative transition-colors duration-200">
+
+  <!-- FULLSCREEN GATEWAY / LOCK SCREEN -->
+  <div id="app-gateway" class="fixed inset-0 bg-brand-blue/95 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-brand-darkcard rounded-2xl shadow-2xl w-full max-w-lg p-6 md:p-8 border border-brand-gold/30">
+
+      <!-- Logo & Header -->
+      <div class="text-center mb-6">
+        <div class="bg-brand-blue p-2 rounded-xl shadow-md w-16 h-16 mx-auto flex items-center justify-center overflow-hidden mb-3">
+          <img src="PROS.png" alt="PROSPHERO MEGALOS VENTURES" class="object-contain w-full h-full" onerror="this.src='https://via.placeholder.com/150/0B2545/C59B27?text=PMV'">
+        </div>
+        <h1 class="text-2xl font-bold tracking-wide text-brand-blue dark:text-brand-gold">PROSPHERO MEGALOS VENTURES</h1>
+        <p class="text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">Enterprise Access & Security Portal</p>
+      </div>
+
+      <!-- Navigation Tabs on Gateway -->
+      <div class="flex border-b border-gray-200 dark:border-gray-700 mb-6 text-xs font-bold">
+        <button id="gt-btn-admin-login" onclick="switchGatewayTab('admin-login')" class="flex-1 py-2.5 text-center border-b-2 border-brand-blue dark:border-brand-gold text-brand-blue dark:text-brand-gold">1. Admin Login</button>
+        <button id="gt-btn-admin-reg" onclick="switchGatewayTab('admin-reg')" class="flex-1 py-2.5 text-center text-gray-400 border-b-2 border-transparent">2. Register Admin</button>
+        <button id="gt-btn-staff" onclick="switchGatewayTab('staff')" class="flex-1 py-2.5 text-center text-gray-400 border-b-2 border-transparent">3. Staff Login</button>
+        <button id="gt-btn-reg" onclick="switchGatewayTab('register')" class="flex-1 py-2.5 text-center text-gray-400 border-b-2 border-transparent">4. Create Staff</button>
+      </div>
+
+      <!-- ADMIN LOGIN FORM -->
+      <form id="gt-form-admin-login" onsubmit="handleGatewayAdminAuth(event)" class="space-y-4">
+        <div class="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 p-3 rounded-lg text-xs text-brand-navy dark:text-blue-200">
+          <i class="fas fa-shield-alt text-brand-gold mr-1"></i> Registered Admins can log in here to access management controls, unlock registration, or clear system logs.
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Admin Username</label>
+          <input type="text" id="gt-admin-user" required placeholder="Enter admin username" class="w-full p-2.5 border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded-lg focus:outline-none focus:border-brand-blue text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Admin Password</label>
+          <input type="password" id="gt-admin-pass" required placeholder="••••••••" class="w-full p-2.5 border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded-lg focus:outline-none focus:border-brand-blue text-sm">
+        </div>
+        <div class="flex space-x-2 pt-2">
+          <button type="submit" class="flex-1 bg-brand-blue hover:bg-brand-navy text-white font-bold py-3 rounded-lg shadow transition text-xs uppercase">
+            Sign In To Admin Portal
+          </button>
+          <button type="button" onclick="unlockStaffRegistrationDirect()" class="bg-brand-gold hover:bg-brand-goldlight text-white font-bold px-3 py-3 rounded-lg shadow transition text-xs whitespace-nowrap">
+            <i class="fas fa-unlock-alt mr-1"></i> Verify & Unlock Staff Reg
+          </button>
+        </div>
+      </form>
+
+      <!-- ADMIN REGISTRATION FORM (MAX 3 ADMINS) -->
+      <form id="gt-form-admin-reg" onsubmit="handleGatewayAdminRegister(event)" class="space-y-3 hidden">
+        <div id="admin-cap-notice" class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 p-3 rounded-lg text-xs text-amber-800 dark:text-amber-200 flex items-center justify-between">
+          <span><i class="fas fa-user-shield text-brand-gold mr-1"></i> Admin Slot Capacity: <strong id="admin-count-display">0 / 3 Registered</strong></span>
+        </div>
+
+        <div>
+          <label class="block text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase">Full Name</label>
+          <input type="text" id="gt-adminreg-name" required placeholder="Admin Name" class="w-full p-2 border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded text-xs focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase">Choose Admin Username</label>
+          <input type="text" id="gt-adminreg-user" required placeholder="Unique username" class="w-full p-2 border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded text-xs focus:outline-none">
+        </div>
+        <div>
+          <label class="block text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase">Password</label>
+          <input type="password" id="gt-adminreg-pass" required placeholder="••••••••" class="w-full p-2 border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded text-xs focus:outline-none">
+        </div>
+        <button type="submit" id="gt-adminreg-btn" class="w-full bg-brand-blue hover:bg-brand-navy text-white font-bold py-2.5 rounded shadow transition text-xs mt-2">
+          Create Admin Account
+        </button>
+      </form>
+
+      <!-- STAFF LOGIN FORM -->
+      <form id="gt-form-staff" onsubmit="handleGatewayStaffAuth(event)" class="space-y-4 hidden">
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Assigned Staff ID</label>
+          <input type="text" id="gt-staff-id" required placeholder="e.g. PMV-101" class="w-full p-2.5 border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded-lg focus:outline-none focus:border-brand-blue text-sm">
+        </div>
+        <button type="submit" class="w-full bg-brand-gold hover:bg-brand-goldlight text-white font-bold py-3 rounded-lg shadow transition text-xs uppercase">
+          Sign In & Access POS Terminal
+        </button>
+      </form>
+
+      <!-- STAFF REGISTRATION FORM -->
+      <form id="gt-form-register" onsubmit="handleGatewayStaffRegister(event)" class="space-y-3 hidden">
+        <div id="registration-locked-notice" class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 p-3 rounded-lg text-xs text-amber-800 dark:text-amber-200 flex items-center">
+          <i class="fas fa-lock text-amber-600 mr-2 text-base"></i>
+          <span>Account Creation is <strong>LOCKED</strong>. An Admin must log in and unlock staff registration first.</span>
+        </div>
+
+        <div id="registration-fields" class="space-y-3 opacity-50 pointer-events-none">
+          <div>
+            <label class="block text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase">Full Name</label>
+            <input type="text" id="gt-reg-name" required class="w-full p-2 border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded text-xs focus:outline-none">
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase">Date of Birth</label>
+              <input type="date" id="gt-reg-dob" required class="w-full p-2 border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded text-xs focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase">Phone Number</label>
+              <input type="tel" id="gt-reg-phone" required class="w-full p-2 border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded text-xs focus:outline-none">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase">ID Document Type</label>
+              <select id="gt-reg-idtype" required class="w-full p-2 border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded text-xs focus:outline-none">
+                <option value="Ghana Card">Ghana Card</option>
+                <option value="Passport">Passport</option>
+                <option value="Driver's License">Driver's License</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase">ID Document Number</label>
+              <input type="text" id="gt-reg-idnum" required class="w-full p-2 border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded text-xs focus:outline-none">
+            </div>
+          </div>
+          <div>
+            <label class="block text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase">Email Address</label>
+            <input type="email" id="gt-reg-email" required class="w-full p-2 border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded text-xs focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase">Current Address</label>
+            <input type="text" id="gt-reg-address" required class="w-full p-2 border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded text-xs focus:outline-none">
+          </div>
+          <button type="submit" id="gt-reg-submit-btn" disabled class="w-full bg-brand-blue hover:bg-brand-navy text-white font-bold py-2.5 rounded shadow transition text-xs mt-2 disabled:opacity-50">
+            Submit Details For Admin Approval
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- TOP HEADER -->
+  <header id="app-header" class="bg-brand-blue text-white shadow-lg sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center space-x-3">
+        <div class="bg-white p-1 rounded-lg shadow-md w-12 h-12 flex items-center justify-center overflow-hidden">
+          <img src="PROS.png" alt="PROSPHERO MEGALOS VENTURES" class="object-contain w-full h-full" onerror="this.src='https://via.placeholder.com/150/0B2545/C59B27?text=PMV'">
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-wide text-brand-gold">PROSPHERO MEGALOS VENTURES</h1>
+          <p class="text-xs text-gray-300">Enterprise POS & Management System</p>
+        </div>
+      </div>
+
+      <!-- Navigation & Auth -->
+      <div class="flex items-center space-x-3 md:space-x-4">
+        <button onclick="switchTab('pos')" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-brand-navy transition"><i class="fas fa-cash-register mr-1"></i> POS Terminal</button>
+        <button onclick="checkAdminAccess()" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-brand-navy transition"><i class="fas fa-user-shield mr-1"></i> Admin Dashboard</button>
+        <button onclick="openMediaControlModal()" class="px-3 py-2 rounded-md text-sm font-medium bg-brand-navy text-brand-gold hover:bg-brand-dark transition border border-brand-gold/30"><i class="fas fa-tv mr-1"></i> HDMI Control</button>
+        
+        <!-- Dark / Light Mode Switcher -->
+        <button onclick="toggleThemeMode()" id="theme-toggle-btn" title="Toggle Light/Dark Theme" class="p-2 rounded-lg bg-brand-navy hover:bg-brand-dark text-brand-gold transition flex items-center justify-center border border-brand-gold/30">
+          <i id="theme-toggle-icon" class="fas fa-moon text-base"></i>
+        </button>
+
+        <div id="auth-status-container" class="text-xs border-l border-gray-600 pl-3 md:pl-4 flex items-center">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main id="app-main" class="flex-grow max-w-7xl w-full mx-auto p-4">
+
+    <!-- POS TERMINAL VIEW -->
+    <div id="view-pos" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- Catalog Section -->
+      <div class="lg:col-span-2 space-y-4">
+        <!-- Live Exchange Rates Bar -->
+        <div class="bg-white dark:bg-brand-darkcard p-4 rounded-xl shadow-sm border border-gray-200 dark:border-brand-darkborder flex flex-wrap justify-between items-center gap-2">
+          <div class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+            <i class="fas fa-globe mr-1 text-brand-gold"></i> Live Multi-Currency Conversion
+          </div>
+          <div class="flex items-center space-x-4 text-sm font-medium">
+            <span class="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-xs text-gray-700 dark:text-gray-200">Primary: <strong>GH₵ (GHS)</strong></span>
+            <span class="text-gray-700 dark:text-gray-300">$1 = <span id="rate-usd">11.14</span> GHS</span>
+            <span class="text-gray-700 dark:text-gray-300">£1 = <span id="rate-gbp">15.18</span> GHS</span>
+            <span class="text-gray-700 dark:text-gray-300">€1 = <span id="rate-eur">13.02</span> GHS</span>
+          </div>
+        </div>
+
+        <!-- SEARCH BAR & SCANNER TRIGGER -->
+        <div class="bg-white dark:bg-brand-darkcard p-3 rounded-xl shadow-sm border border-gray-200 dark:border-brand-darkborder flex items-center gap-3">
+          <div class="flex-1 flex items-center bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg border dark:border-gray-700 focus-within:border-brand-blue">
+            <i class="fas fa-search text-gray-400 mr-2"></i>
+            <input type="text" id="pos-search" oninput="renderPosProducts()" placeholder="Search product name, category, SKU or Barcode..." class="w-full bg-transparent focus:outline-none text-sm dark:text-white">
+          </div>
+          <button onclick="openScannerModal()" class="bg-brand-gold hover:bg-brand-goldlight text-white font-bold px-4 py-2 rounded-lg text-xs shadow flex items-center transition whitespace-nowrap">
+            <i class="fas fa-qrcode mr-2 text-sm"></i> QR / Barcode Scan
+          </button>
+        </div>
+
+        <!-- Product Grid -->
+        <div id="pos-product-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <!-- Products injected here via JS -->
+        </div>
+      </div>
+
+      <!-- Checkout Cart Section -->
+      <div class="bg-white dark:bg-brand-darkcard p-4 rounded-xl shadow-sm border border-gray-200 dark:border-brand-darkborder flex flex-col justify-between h-fit">
+        <div>
+          <div class="flex justify-between items-center border-b dark:border-gray-700 pb-3 mb-3">
+            <h2 class="font-bold text-gray-800 dark:text-white text-lg"><i class="fas fa-shopping-cart text-brand-gold mr-2"></i>Current Order</h2>
+            <button onclick="clearCart()" class="text-xs text-gray-500 dark:text-gray-400 hover:text-red-500 hover:underline">Clear Current Cart</button>
+          </div>
+
+          <!-- Active Cashier Notice -->
+          <div class="mb-3 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 p-2 rounded text-xs flex justify-between items-center text-blue-900 dark:text-blue-200">
+            <span>Seller Active: <strong id="active-seller-display">None</strong></span>
+            <button onclick="showGateway()" class="text-brand-gold font-bold underline">Switch Account</button>
+          </div>
+
+          <!-- Cart Items -->
+          <div id="cart-items" class="space-y-3 max-h-80 overflow-y-auto pr-1">
+            <p class="text-sm text-gray-400 text-center py-8">Cart is empty</p>
+          </div>
+        </div>
+
+        <!-- Order Summary & Currency Conversions -->
+        <div class="border-t dark:border-gray-700 pt-4 mt-6 space-y-3">
+          <div class="space-y-1 text-sm">
+            <div class="flex justify-between text-gray-600 dark:text-gray-300">
+              <span>Subtotal:</span>
+              <span id="summary-subtotal">GH₵ 0.00</span>
+            </div>
+            <div class="flex justify-between text-gray-600 dark:text-gray-300">
+              <span>VAT / Tax (0%):</span>
+              <span>GH₵ 0.00</span>
+            </div>
+            <div class="flex justify-between font-bold text-lg text-brand-blue dark:text-brand-gold pt-2 border-t dark:border-gray-700">
+              <span>Total (GHS):</span>
+              <span id="summary-total-ghs">GH₵ 0.00</span>
+            </div>
+          </div>
+
+          <!-- Converted Totals Box -->
+          <div class="bg-brand-blue/5 dark:bg-gray-800/60 p-3 rounded-lg border border-brand-blue/10 dark:border-gray-700 space-y-1 text-xs">
+            <div class="font-semibold text-brand-blue dark:text-brand-gold mb-1">Equivalent Multi-Currency Total:</div>
+            <div class="flex justify-between text-gray-700 dark:text-gray-300">
+              <span>US Dollar ($):</span>
+              <strong id="conv-usd">$0.00</strong>
+            </div>
+            <div class="flex justify-between text-gray-700 dark:text-gray-300">
+              <span>British Pound (£):</span>
+              <strong id="conv-gbp">£0.00</strong>
+            </div>
+            <div class="flex justify-between text-gray-700 dark:text-gray-300">
+              <span>Euro (€):</span>
+              <strong id="conv-eur">€0.00</strong>
+            </div>
+          </div>
+
+          <button onclick="processCheckout()" class="w-full bg-brand-gold hover:bg-brand-goldlight text-white font-bold py-3 rounded-lg shadow transition flex justify-center items-center">
+            <i class="fas fa-check-circle mr-2"></i> Complete Sale & Print Receipt
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN DASHBOARD VIEW -->
+    <div id="view-admin" class="hidden space-y-6">
+
+      <!-- Metrics Bar -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-brand-darkcard p-4 rounded-xl shadow-sm border border-gray-200 dark:border-brand-darkborder flex items-center justify-between">
+          <div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 uppercase">Total Sales</p>
+            <h3 class="text-xl font-bold text-gray-800 dark:text-white" id="metric-total-sales">GH₵ 0.00</h3>
+          </div>
+          <div class="bg-green-100 dark:bg-green-950/60 p-3 rounded-full text-green-600 dark:text-green-400"><i class="fas fa-chart-line"></i></div>
+        </div>
+        <div class="bg-white dark:bg-brand-darkcard p-4 rounded-xl shadow-sm border border-gray-200 dark:border-brand-darkborder flex items-center justify-between">
+          <div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 uppercase">Total Orders</p>
+            <h3 class="text-xl font-bold text-gray-800 dark:text-white" id="metric-orders-count">0</h3>
+          </div>
+          <div class="bg-blue-100 dark:bg-blue-950/60 p-3 rounded-full text-blue-600 dark:text-blue-400"><i class="fas fa-receipt"></i></div>
+        </div>
+        <div class="bg-white dark:bg-brand-darkcard p-4 rounded-xl shadow-sm border border-gray-200 dark:border-brand-darkborder flex items-center justify-between">
+          <div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 uppercase">Registered Staff</p>
+            <h3 class="text-xl font-bold text-gray-800 dark:text-white" id="metric-staff-count">0</h3>
+          </div>
+          <div class="bg-purple-100 dark:bg-purple-950/60 p-3 rounded-full text-purple-600 dark:text-purple-400"><i class="fas fa-users"></i></div>
+        </div>
+        <div class="bg-white dark:bg-brand-darkcard p-4 rounded-xl shadow-sm border border-gray-200 dark:border-brand-darkborder flex items-center justify-between">
+          <div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 uppercase">Admin Accounts</p>
+            <h3 class="text-sm font-bold text-brand-blue dark:text-brand-gold" id="metric-admin-count">0 / 3 Slots</h3>
+          </div>
+          <div class="bg-amber-100 dark:bg-amber-950/60 p-3 rounded-full text-brand-gold"><i class="fas fa-user-shield"></i></div>
+        </div>
+      </div>
+
+      <!-- Action & Inventory Toolbar -->
+      <div class="flex justify-between items-center bg-white dark:bg-brand-darkcard p-4 rounded-xl shadow-sm border border-gray-200 dark:border-brand-darkborder">
+        <h2 class="text-lg font-bold text-brand-blue dark:text-brand-gold"><i class="fas fa-box-open mr-2"></i> Inventory Control</h2>
+        <button onclick="openProductModal()" class="bg-brand-blue hover:bg-brand-navy text-white px-4 py-2 rounded-lg text-sm font-bold shadow transition">
+          <i class="fas fa-plus-circle mr-1"></i> Add New Product
+        </button>
+      </div>
+
+      <!-- Products Inventory Table -->
+      <div class="bg-white dark:bg-brand-darkcard rounded-xl shadow-sm border border-gray-200 dark:border-brand-darkborder overflow-hidden">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-gray-50 dark:bg-gray-800/60 text-gray-600 dark:text-gray-300 uppercase text-xs border-b dark:border-gray-700">
+              <th class="p-4">SKU / Barcode</th>
+              <th class="p-4">Product Details</th>
+              <th class="p-4">Category</th>
+              <th class="p-4">Price (GHS)</th>
+              <th class="p-4">Rates ($ / £ / €)</th>
+              <th class="p-4">Stock</th>
+              <th class="p-4 text-right">Admin Actions</th>
+            </tr>
+          </thead>
+          <tbody id="admin-product-table" class="divide-y dark:divide-gray-700 text-sm">
+            <!-- Table rows injected via JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ADMIN ROSTER & CONTROL PANEL -->
+      <div class="bg-white dark:bg-brand-darkcard p-4 rounded-xl shadow-sm border border-gray-200 dark:border-brand-darkborder space-y-4">
+        <h2 class="text-lg font-bold text-brand-blue dark:text-brand-gold border-b dark:border-gray-700 pb-3"><i class="fas fa-user-shield mr-2"></i> Authorized System Admins (Max 3 Allowed)</h2>
+        <div class="overflow-x-auto border dark:border-gray-700 rounded-lg">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-gray-50 dark:bg-gray-800/60 dark:text-gray-300 border-b dark:border-gray-700">
+              <tr>
+                <th class="p-2">Full Name</th>
+                <th class="p-2">Username</th>
+                <th class="p-2">Status</th>
+                <th class="p-2 text-right">Admin Action</th>
+              </tr>
+            </thead>
+            <tbody id="admin-accounts-table" class="divide-y dark:divide-gray-700">
+              <!-- Injected JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- STAFF MANAGEMENT SECTION -->
+      <div class="bg-white dark:bg-brand-darkcard p-4 rounded-xl shadow-sm border border-gray-200 dark:border-brand-darkborder space-y-4">
+        <div class="flex justify-between items-center border-b dark:border-gray-700 pb-3">
+          <h2 class="text-lg font-bold text-brand-blue dark:text-brand-gold"><i class="fas fa-user-check mr-2"></i> Staff Approvals & Active Roster</h2>
+          <button onclick="openManualStaffModal()" class="bg-brand-gold hover:bg-brand-goldlight text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow transition">
+            <i class="fas fa-user-plus mr-1"></i> Manually Add Staff
+          </button>
+        </div>
+
+        <!-- Pending Approval Table -->
+        <div class="space-y-2">
+          <h3 class="text-xs font-bold uppercase text-amber-600 dark:text-amber-400">Pending Registrations</h3>
+          <div class="overflow-x-auto border dark:border-gray-700 rounded-lg">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-amber-50 dark:bg-amber-950/40 dark:text-amber-200 border-b dark:border-gray-700">
+                <tr>
+                  <th class="p-2">Name</th>
+                  <th class="p-2">DOB</th>
+                  <th class="p-2">ID Type & Number</th>
+                  <th class="p-2">Phone / Email</th>
+                  <th class="p-2">Address</th>
+                  <th class="p-2 text-right">Admin Action</th>
+                </tr>
+              </thead>
+              <tbody id="pending-staff-table" class="divide-y dark:divide-gray-700">
+                <!-- Injected JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Approved Staff Table -->
+        <div class="space-y-2 pt-2">
+          <h3 class="text-xs font-bold uppercase text-brand-navy dark:text-blue-300">Approved Staff & Today's Attendance</h3>
+          <div class="overflow-x-auto border dark:border-gray-700 rounded-lg">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-gray-50 dark:bg-gray-800/60 dark:text-gray-300 border-b dark:border-gray-700">
+                <tr>
+                  <th class="p-2">Staff ID</th>
+                  <th class="p-2">Name</th>
+                  <th class="p-2">Contact</th>
+                  <th class="p-2">Attendance Status</th>
+                  <th class="p-2">Last Login Time</th>
+                  <th class="p-2 text-right">Admin Action</th>
+                </tr>
+              </thead>
+              <tbody id="approved-staff-table" class="divide-y dark:divide-gray-700">
+                <!-- Injected JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SALES AUDIT LOG -->
+      <div class="bg-white dark:bg-brand-darkcard p-4 rounded-xl shadow-sm border border-gray-200 dark:border-brand-darkborder space-y-4">
+        <div class="flex justify-between items-center border-b dark:border-gray-700 pb-3">
+          <h2 class="text-lg font-bold text-brand-blue dark:text-brand-gold"><i class="fas fa-file-invoice-dollar mr-2"></i> Persistent Sales Audit Log</h2>
+          <button onclick="adminClearSalesLog()" class="bg-red-50 dark:bg-red-950/40 hover:bg-red-100 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 px-3 py-1 rounded text-xs font-bold transition">
+            <i class="fas fa-trash-alt mr-1"></i> Clear Sales History (Admin Only)
+          </button>
+        </div>
+        <div class="overflow-x-auto border dark:border-gray-700 rounded-lg">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-gray-50 dark:bg-gray-800/60 dark:text-gray-300 border-b dark:border-gray-700">
+              <tr>
+                <th class="p-2">Time</th>
+                <th class="p-2">Seller Name</th>
+                <th class="p-2">Staff ID</th>
+                <th class="p-2">Total Sale (GHS)</th>
+              </tr>
+            </thead>
+            <tbody id="sales-log-table" class="divide-y dark:divide-gray-700">
+              <!-- Injected JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ADMIN DATA CONTROL & STORAGE MANAGEMENT CENTER -->
+      <div class="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 p-5 rounded-xl shadow-sm space-y-3">
+        <h2 class="text-base font-bold text-red-800 dark:text-red-400 flex items-center">
+          <i class="fas fa-user-shield text-red-600 dark:text-red-400 mr-2 text-lg"></i> Admin Data Control & Storage Center
+        </h2>
+        <p class="text-xs text-red-700 dark:text-red-300">
+          All system entries (sales, staff, products) are securely retained in local storage. Staff cannot erase data. Only a logged-in Administrator can perform system clear operations below.
+        </p>
+        <div class="flex flex-wrap gap-3 pt-2">
+          <button onclick="adminClearSalesLog()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow transition">
+            <i class="fas fa-eraser mr-1"></i> Clear Sales History Only
+          </button>
+          <button onclick="adminClearProducts()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow transition">
+            <i class="fas fa-boxes mr-1"></i> Clear Inventory Products Only
+          </button>
+          <button onclick="adminClearStaff()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-xs font-bold shadow transition">
+            <i class="fas fa-users-slash mr-1"></i> Clear Staff Roster Only
+          </button>
+          <button onclick="adminFullSystemReset()" class="bg-red-800 hover:bg-red-900 text-white px-4 py-2 rounded-lg text-xs font-bold shadow transition">
+            <i class="fas fa-power-off mr-1"></i> Full System Factory Reset
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- HDMI SECONDARY DISPLAY / PROJECTION VIEW PAGE -->
+  <div id="hdmi-projection-screen" class="fixed inset-0 bg-brand-dark z-[200] flex-col justify-between p-8 text-white overflow-hidden">
+    <!-- Header Showcase Banner -->
+    <div class="flex justify-between items-center border-b border-brand-gold/30 pb-4">
+      <div class="flex items-center space-x-4">
+        <div class="bg-white p-2 rounded-xl shadow-lg w-16 h-16 flex items-center justify-center overflow-hidden">
+          <img src="PROS.png" alt="PROSPHERO MEGALOS VENTURES" class="object-contain w-full h-full" onerror="this.src='https://via.placeholder.com/150/0B2545/C59B27?text=PMV'">
+        </div>
+        <div>
+          <h1 class="text-3xl font-extrabold tracking-wider text-brand-gold">PROSPHERO MEGALOS VENTURES</h1>
+          <p class="text-sm text-gray-300">Welcome! Enterprise Product Showcase & Live Display</p>
+        </div>
+      </div>
+      <div class="text-right">
+        <span class="bg-brand-gold text-brand-dark px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest"><i class="fas fa-tv mr-1"></i> HDMI Live Projection</span>
+        <p id="tv-clock" class="text-xl font-mono mt-1 text-gray-300">00:00:00</p>
+      </div>
+    </div>
+
+    <!-- Main Showcase Screen Content -->
+    <div class="flex-grow my-6 grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
+      <!-- Media Player Display Container -->
+      <div class="lg:col-span-2 bg-black rounded-2xl overflow-hidden shadow-2xl border border-brand-gold/40 relative aspect-video flex items-center justify-center">
+        <!-- Video Player -->
+        <video id="tv-video-player" class="w-full h-full object-contain hidden" autoplay loop muted></video>
+        <!-- Picture Player -->
+        <img id="tv-image-player" class="w-full h-full object-contain hidden" alt="Showcase Image">
+        <!-- Fallback / Idle Screen -->
+        <div id="tv-idle-player" class="text-center p-8">
+          <i class="fas fa-photo-video text-6xl text-brand-gold animate-bounce mb-4"></i>
+          <h2 class="text-2xl font-bold text-white mb-2">PROSPHERO MEGALOS VENTURES SHOWCASE</h2>
+          <p class="text-sm text-gray-400">Audio & Video Projection active. Load media from the control panel to display animations and product pictures.</p>
+        </div>
+      </div>
+
+      <!-- Live Order / Featured Catalog Sidebar -->
+      <div class="bg-brand-blue/80 backdrop-blur-md p-6 rounded-2xl border border-brand-gold/30 h-full flex flex-col justify-between shadow-xl">
+        <div>
+          <h3 class="text-lg font-bold text-brand-gold border-b border-gray-700 pb-2 mb-4"><i class="fas fa-star mr-2"></i> Featured Products & Pricing</h3>
+          <div id="tv-showcase-list" class="space-y-3 max-h-96 overflow-y-auto pr-1">
+            <!-- Dynamically populated from inventory -->
+          </div>
+        </div>
+        <div class="border-t border-gray-700 pt-4 mt-4 text-center">
+          <p class="text-xs text-gray-300 font-semibold uppercase tracking-wider">Multi-Currency Live Rates</p>
+          <div class="flex justify-around text-xs mt-2 text-brand-gold font-bold">
+            <span>$1 = 11.14 GHS</span>
+            <span>£1 = 15.18 GHS</span>
+            <span>€1 = 13.02 GHS</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Audio Control & Ticker -->
+    <div class="bg-brand-blue p-3 rounded-xl border border-brand-gold/30 flex items-center justify-between text-xs">
+      <div class="flex items-center space-x-3">
+        <i class="fas fa-volume-up text-brand-gold text-lg"></i>
+        <audio id="tv-audio-player" controls loop class="h-8 max-w-xs bg-brand-navy rounded"></audio>
+      </div>
+      <div class="overflow-hidden flex-1 mx-6">
+        <p class="animate-marquee whitespace-nowrap text-gray-300 font-medium">
+          *** WELCOME TO PROSPHERO MEGALOS VENTURES • ENJOY HIGH QUALITY ARCHITECTURAL DESIGNS, CORPORATE BRANDING, & EXECUTIVE SYSTEMS • TALK TO OUR REPRESENTATIVES AT THE COUNTER ***
+        </p>
+      </div>
+      <button onclick="toggleForceTVMode()" class="bg-red-600 hover:bg-red-700 text-white font-bold px-3 py-1.5 rounded transition">
+        Exit TV Projection Screen
+      </button>
+    </div>
+  </div>
+
+  <!-- MEDIA CONTROL & HDMI PROJECTION MODAL -->
+  <div id="modal-media-control" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden z-[150]">
+    <div class="bg-white dark:bg-brand-darkcard rounded-2xl shadow-xl w-full max-w-lg p-6 relative border dark:border-brand-darkborder">
+      <button onclick="closeMediaControlModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><i class="fas fa-times"></i></button>
+      <h2 class="text-lg font-bold text-brand-blue dark:text-brand-gold mb-1"><i class="fas fa-tv text-brand-gold mr-2"></i> HDMI Media Projection Control Panel</h2>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Upload or link videos, animations, pictures, and audio to project directly to the connected TV display.</p>
+
+      <form onsubmit="handleMediaSourceSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Video / Animation URL or File</label>
+          <input type="text" id="media-video-src" placeholder="Paste MP4 video link or select local file..." class="w-full p-2.5 border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded-lg text-xs focus:outline-none focus:border-brand-blue">
+          <input type="file" id="media-video-file" accept="video/*" onchange="handleFileSelect(event, 'media-video-src')" class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Showcase Picture URL or File</label>
+          <input type="text" id="media-image-src" placeholder="Paste JPG/PNG image link or select local file..." class="w-full p-2.5 border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded-lg text-xs focus:outline-none focus:border-brand-blue">
+          <input type="file" id="media-image-file" accept="image/*" onchange="handleFileSelect(event, 'media-image-src')" class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Background Audio Soundtrack URL or File</label>
+          <input type="text" id="media-audio-src" placeholder="Paste MP3 sound link or select local sound file..." class="w-full p-2.5 border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded-lg text-xs focus:outline-none focus:border-brand-blue">
+          <input type="file" id="media-audio-file" accept="audio/*" onchange="handleFileSelect(event, 'media-audio-src')" class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+        </div>
+
+        <div class="flex gap-2 pt-2">
+          <button type="submit" class="flex-1 bg-brand-blue hover:bg-brand-navy text-white font-bold py-2.5 rounded-lg shadow text-xs">
+            <i class="fas fa-play mr-1"></i> Update & Cast Media To Screen
+          </button>
+          <button type="button" onclick="toggleForceTVMode()" class="bg-brand-gold hover:bg-brand-goldlight text-white font-bold px-4 py-2.5 rounded-lg shadow text-xs whitespace-nowrap">
+            <i class="fas fa-expand mr-1"></i> Preview TV Projection Mode
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- QR / BARCODE SCANNER MODAL -->
+  <div id="modal-scanner" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden z-50">
+    <div class="bg-white dark:bg-brand-darkcard rounded-2xl shadow-xl w-full max-w-md p-6 relative border dark:border-brand-darkborder">
+      <button onclick="closeScannerModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><i class="fas fa-times"></i></button>
+      <h2 class="text-lg font-bold text-brand-blue dark:text-brand-gold mb-1"><i class="fas fa-barcode text-brand-gold mr-2"></i> Product Code / Price Scanner</h2>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Scan QR code / barcode or enter product SKU code below to check instant price and details.</p>
+
+      <!-- Scanner Simulation Viewport -->
+      <div class="bg-black text-white rounded-xl p-6 text-center space-y-3 relative overflow-hidden border-2 border-dashed border-brand-gold mb-4">
+        <i class="fas fa-camera text-3xl text-brand-gold animate-pulse"></i>
+        <p class="text-xs text-gray-300">Scanner active. Point barcode camera or enter code manually.</p>
+        <div class="absolute inset-x-0 top-1/2 border-t border-red-500/80 shadow-sm"></div>
+      </div>
+
+      <!-- Scan Input Field -->
+      <form onsubmit="handleManualScan(event)" class="space-y-3">
+        <div>
+          <label class="block text-[10px] font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Enter Barcode / SKU Code</label>
+          <div class="flex gap-2">
+            <input type="text" id="scanner-input" placeholder="e.g. PMV-SKU-1001" required class="flex-1 p-2.5 border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded-lg text-sm focus:outline-none focus:border-brand-blue font-mono">
+            <button type="submit" class="bg-brand-blue hover:bg-brand-navy text-white px-4 py-2.5 rounded-lg font-bold text-xs">Lookup Price</button>
+          </div>
+        </div>
+      </form>
+
+      <!-- Scan Result Output Box -->
+      <div id="scanner-result-box" class="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hidden">
+        <!-- Injected JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MANUAL STAFF ADD MODAL (ADMIN ACTION) -->
+  <div id="modal-manual-staff" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-50">
+    <div class="bg-white dark:bg-brand-darkcard rounded-2xl shadow-xl w-full max-w-md p-6 relative border dark:border-brand-darkborder">
+      <button onclick="closeManualStaffModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><i class="fas fa-times"></i></button>
+      <h2 class="text-lg font-bold text-brand-blue dark:text-brand-gold mb-3"><i class="fas fa-user-plus text-brand-gold mr-2"></i> Manually Add Approved Staff</h2>
+      <form onsubmit="handleManualStaffAdd(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Full Name</label>
+          <input type="text" id="manual-name" required class="w-full p-2 border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded text-xs">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Assign Staff ID</label>
+            <input type="text" id="manual-id" required placeholder="e.g. PMV-102" class="w-full p-2 border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded text-xs">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Phone</label>
+            <input type="tel" id="manual-phone" required class="w-full p-2 border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded text-xs">
+          </div>
+        </div>
+        <button type="submit" class="w-full bg-brand-gold hover:bg-brand-goldlight text-white font-bold py-2.5 rounded shadow text-xs">
+          Create & Approve Staff Access
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADD/EDIT PRODUCT MODAL -->
+  <div id="modal-product" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center hidden z-50">
+    <div class="bg-white dark:bg-brand-darkcard rounded-2xl shadow-xl w-full max-w-lg p-6 relative max-h-[90vh] overflow-y-auto border dark:border-brand-darkborder">
+      <button onclick="closeProductModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><i class="fas fa-times"></i></button>
+      <h2 class="text-xl font-bold text-brand-blue dark:text-brand-gold mb-1" id="product-modal-title"><i class="fas fa-plus-circle text-brand-gold mr-2"></i> Upload / Edit Product</h2>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-4" id="product-modal-subtitle">Fill in the details below to add a brand-new product to the catalog.</p>
+
+      <!-- Restock helper box (only shown while editing an existing product) -->
+      <div id="restock-box" class="hidden bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-4">
+        <label class="block text-[10px] font-semibold text-amber-800 dark:text-amber-200 uppercase mb-1">Quick Restock (adds to current stock)</label>
+        <div class="flex gap-2">
+          <input type="number" id="restock-qty" min="1" placeholder="Qty to add e.g. 20" class="flex-1 p-2 border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded text-xs focus:outline-none">
+          <button type="button" onclick="applyQuickRestock()" class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded text-xs font-bold whitespace-nowrap">
+            <i class="fas fa-plus mr-1"></i> Add To Stock
+          </button>
+        </div>
+        <p class="text-[10px] text-amber-700 dark:text-amber-300 mt-1">This immediately updates the Stock Quantity field below — you can still adjust other details before saving.</p>
+      </div>
+
+      <form onsubmit="handleProductUpload(event)" class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Product Name</label>
+            <input type="text" id="prod-name" required class="w-full p-2.5 border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded-lg text-sm focus:outline-none focus:border-brand-blue">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Barcode / Unique SKU Code</label>
+            <input type="text" id="prod-code" required placeholder="e.g. PMV-SKU-1004" class="w-full p-2.5 border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded-lg text-sm font-mono focus:outline-none focus:border-brand-blue">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Category</label>
+            <input type="text" id="prod-category" required placeholder="General" class="w-full p-2.5 border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded-lg text-sm focus:outline-none focus:border-brand-blue">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Price (Ghana Cedi - GH₵)</label>
+            <input type="number" step="0.01" id="prod-price" required class="w-full p-2.5 border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded-lg text-sm focus:outline-none focus:border-brand-blue">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Stock Quantity</label>
+            <input type="number" id="prod-stock" required class="w-full p-2.5 border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded-lg text-sm focus:outline-none focus:border-brand-blue">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Upload Product Image</label>
+            <input type="file" id="prod-image-file" accept="image/*" onchange="handleProductImageUpload(event)" class="w-full p-1.5 border dark:border-gray-700 bg-white dark:bg-gray-800 dark:text-white rounded-lg text-xs text-gray-500 focus:outline-none">
+            <input type="hidden" id="prod-image">
+            <div id="prod-image-preview" class="mt-2 hidden flex items-center space-x-2 border dark:border-gray-700 p-1 rounded bg-gray-50 dark:bg-gray-800">
+              <img id="prod-image-preview-src" src="" class="w-10 h-10 object-cover rounded shadow-sm">
+              <span class="text-[10px] text-gray-500 dark:text-gray-400 flex-1 truncate">Image loaded</span>
+              <button type="button" onclick="clearProductImage()" class="text-red-500 hover:text-red-700 text-xs px-1 font-bold"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+        </div>
+        <button type="submit" id="product-modal-submit-btn" class="w-full bg-brand-gold hover:bg-brand-goldlight text-white font-bold py-3 rounded-lg shadow transition text-sm">
+          Save Product to Inventory
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- PRINTABLE RECEIPT TEMPLATE -->
+  <div id="printable-receipt" class="hidden p-6 max-w-sm mx-auto bg-white text-black font-mono text-xs">
+    <div class="text-center mb-4 border-b border-black pb-2">
+      <h2 class="font-bold text-sm">PROSPHERO MEGALOS VENTURES</h2>
+      <p>Accra, Ghana</p>
+      <p id="receipt-date"></p>
+      <p class="mt-1 font-bold">Seller: <span id="receipt-seller">Unassigned</span></p>
+    </div>
+    <div id="receipt-items-list" class="space-y-1 border-b border-black pb-2 mb-2">
+      <!-- Injected by JS -->
+    </div>
+    <div class="space-y-1 font-bold">
+      <div class="flex justify-between"><span>Total GHS:</span><span id="receipt-total-ghs"></span></div>
+      <div class="flex justify-between text-gray-600"><span>USD ($):</span><span id="receipt-total-usd"></span></div>
+      <div class="flex justify-between text-gray-600"><span>GBP (£):</span><span id="receipt-total-gbp"></span></div>
+      <div class="flex justify-between text-gray-600"><span>EUR (€):</span><span id="receipt-total-eur"></span></div>
+    </div>
+    <div class="text-center mt-4 pt-2 border-t border-black space-y-1">
+      <p class="font-bold tracking-wider uppercase text-[10px]">*** GOODS SOLD ARE NOT RETURNABLE ***</p>
+      <p class="text-[9px]">Thank you for doing business with us!</p>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT APP LOGIC -->
+  <script>
+    // System Exchange Rates & State
+    const RATES = { USD: 11.14, GBP: 15.18, EUR: 13.02 };
+    let currentUser = JSON.parse(localStorage.getItem('pmv_user')) || null;
+    let activeSeller = JSON.parse(localStorage.getItem('pmv_active_seller')) || null;
+    let registrationUnlocked = JSON.parse(localStorage.getItem('pmv_reg_unlocked')) || false;
+    let isDarkMode = JSON.parse(localStorage.getItem('pmv_theme')) || false;
+
+    // Persistent Admin Accounts List (Strict 3 Max Limit)
+    let adminAccounts = JSON.parse(localStorage.getItem('pmv_admin_accounts')) || [];
+
+    // Persistent Products Inventory
+    let products = JSON.parse(localStorage.getItem('pmv_products')) || [
+      { id: '1', code: 'PMV-SKU-1001', name: 'Premium Architectural Layout Pack', category: 'Services', price: 1500.00, stock: 25, image: '' },
+      { id: '2', code: 'PMV-SKU-1002', name: 'Corporate Brand Identity Manual', category: 'Design', price: 850.00, stock: 10, image: '' },
+      { id: '3', code: 'PMV-SKU-1003', name: 'Executive Desktop Station', category: 'Equipment', price: 3200.00, stock: 5, image: '' }
+    ];
+
+    // Persistent Staff Roster
+    let staffMembers = JSON.parse(localStorage.getItem('pmv_staff')) || [
+      {
+        id: 'PMV-101',
+        name: 'Kwame Mensah',
+        dob: '1995-04-12',
+        idType: 'Ghana Card',
+        idNumber: 'GHA-7221049-1',
+        phone: '0244123456',
+        email: 'kwame@pmv.com',
+        address: 'East Legon, Accra',
+        status: 'approved',
+        lastLogin: 'Never',
+        attendance: {}
+      }
+    ];
+
+    let cart = [];
+    // Persistent Sales Audit Trail
+    let salesHistory = JSON.parse(localStorage.getItem('pmv_sales')) || [];
+
+    // Tracks whether the product modal is in "Add New" or "Edit Existing" mode
+    let editingProductId = null;
+
+    // HDMI Audio / Video Media Projection State
+    let mediaConfig = JSON.parse(localStorage.getItem('pmv_media_config')) || {
+      videoSrc: '',
+      imageSrc: '',
+      audioSrc: ''
+    };
+
+    // Initialize App
+    document.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+      updateAuthStatusUI();
+      renderPosProducts();
+      renderAdminProducts();
+      renderAdminAccountsTable();
+      renderStaffTables();
+      renderSalesLog();
+      updateMetrics();
+      updateActiveSellerDisplay();
+      updateRegistrationLockUI();
+      updateAdminCapacityUI();
+      initTVMediaProjection();
+
+      if (!currentUser && !activeSeller) {
+        showGateway();
+      } else {
+        hideGateway();
+      }
+
+      // Live TV Clock
+      setInterval(() => {
+        const clockEl = document.getElementById('tv-clock');
+        if (clockEl) clockEl.innerText = new Date().toLocaleTimeString();
+      }, 1000);
+    });
+
+    // Dark / Light Theme Logic
+    function initTheme() {
+      if (isDarkMode) {
+        document.documentElement.classList.add('dark');
+        updateThemeUI(true);
+      } else {
+        document.documentElement.classList.remove('dark');
+        updateThemeUI(false);
+      }
+    }
+
+    function toggleThemeMode() {
+      isDarkMode = !isDarkMode;
+      localStorage.setItem('pmv_theme', JSON.stringify(isDarkMode));
+      initTheme();
+    }
+
+    function updateThemeUI(dark) {
+      const icon = document.getElementById('theme-toggle-icon');
+      if (icon) {
+        if (dark) {
+          icon.className = 'fas fa-sun text-brand-gold text-base';
+        } else {
+          icon.className = 'fas fa-moon text-brand-gold text-base';
+        }
+      }
+    }
+
+    function showGateway() {
+      document.getElementById('app-gateway').classList.remove('hidden');
+    }
+
+    function hideGateway() {
+      document.getElementById('app-gateway').classList.add('hidden');
+    }
+
+    function switchGatewayTab(type) {
+      const formAdminLogin = document.getElementById('gt-form-admin-login');
+      const formAdminReg = document.getElementById('gt-form-admin-reg');
+      const formStaff = document.getElementById('gt-form-staff');
+      const formReg = document.getElementById('gt-form-register');
+
+      document.getElementById('gt-btn-admin-login').className = 'flex-1 py-2.5 text-center text-gray-400 border-b-2 border-transparent';
+      document.getElementById('gt-btn-admin-reg').className = 'flex-1 py-2.5 text-center text-gray-400 border-b-2 border-transparent';
+      document.getElementById('gt-btn-staff').className = 'flex-1 py-2.5 text-center text-gray-400 border-b-2 border-transparent';
+      document.getElementById('gt-btn-reg').className = 'flex-1 py-2.5 text-center text-gray-400 border-b-2 border-transparent';
+
+      formAdminLogin.classList.add('hidden');
+      formAdminReg.classList.add('hidden');
+      formStaff.classList.add('hidden');
+      formReg.classList.add('hidden');
+
+      if (type === 'admin-login') {
+        document.getElementById('gt-btn-admin-login').className = 'flex-1 py-2.5 text-center border-b-2 border-brand-blue dark:border-brand-gold text-brand-blue dark:text-brand-gold font-bold';
+        formAdminLogin.classList.remove('hidden');
+      } else if (type === 'admin-reg') {
+        document.getElementById('gt-btn-admin-reg').className = 'flex-1 py-2.5 text-center border-b-2 border-brand-blue dark:border-brand-gold text-brand-blue dark:text-brand-gold font-bold';
+        formAdminReg.classList.remove('hidden');
+      } else if (type === 'staff') {
+        document.getElementById('gt-btn-staff').className = 'flex-1 py-2.5 text-center border-b-2 border-brand-blue dark:border-brand-gold text-brand-blue dark:text-brand-gold font-bold';
+        formStaff.classList.remove('hidden');
+      } else {
+        document.getElementById('gt-btn-reg').className = 'flex-1 py-2.5 text-center border-b-2 border-brand-blue dark:border-brand-gold text-brand-blue dark:text-brand-gold font-bold';
+        formReg.classList.remove('hidden');
+      }
+    }
+
+    // ADMIN REGISTRATION & LOGIN LOGIC (STRICT MAX 3 ADMINS)
+    function handleGatewayAdminRegister(e) {
+      e.preventDefault();
+      if (adminAccounts.length >= 3) {
+        alert('Registration Closed! Maximum limit of 3 Admin accounts has already been reached.');
+        return;
+      }
+
+      const name = document.getElementById('gt-adminreg-name').value.trim();
+      const user = document.getElementById('gt-adminreg-user').value.trim().toLowerCase();
+      const pass = document.getElementById('gt-adminreg-pass').value;
+
+      if (adminAccounts.some(a => a.username === user)) {
+        alert('Username is already taken! Please choose another admin username.');
+        return;
+      }
+
+      const newAdmin = { name, username: user, password: pass, dateCreated: new Date().toLocaleDateString() };
+      adminAccounts.push(newAdmin);
+      localStorage.setItem('pmv_admin_accounts', JSON.stringify(adminAccounts));
+
+      alert(`Admin account created successfully! Total admins registered: ${adminAccounts.length}/3.`);
+      updateAdminCapacityUI();
+      renderAdminAccountsTable();
+      updateMetrics();
+      e.target.reset();
+
+      switchGatewayTab('admin-login');
+    }
+
+    function handleGatewayAdminAuth(e) {
+      e.preventDefault();
+      const u = document.getElementById('gt-admin-user').value.trim().toLowerCase();
+      const p = document.getElementById('gt-admin-pass').value;
+
+      if (adminAccounts.length === 0) {
+        alert('No Admin accounts exist! Please create an account in the "Register Admin" tab first.');
+        switchGatewayTab('admin-reg');
+        return;
+      }
+
+      const foundAdmin = adminAccounts.find(a => a.username === u && a.password === p);
+
+      if (foundAdmin) {
+        currentUser = { username: foundAdmin.username, name: foundAdmin.name };
+        localStorage.setItem('pmv_user', JSON.stringify(currentUser));
+        updateAuthStatusUI();
+        hideGateway();
+        switchTab('admin');
+      } else {
+        alert('Invalid Admin Username or Password! Please verify your login credentials.');
+      }
+    }
+
+    function unlockStaffRegistrationDirect() {
+      const u = document.getElementById('gt-admin-user').value.trim().toLowerCase();
+      const p = document.getElementById('gt-admin-pass').value;
+
+      const foundAdmin = adminAccounts.find(a => a.username === u && a.password === p);
+
+      if (foundAdmin) {
+        registrationUnlocked = true;
+        localStorage.setItem('pmv_reg_unlocked', JSON.stringify(true));
+        updateRegistrationLockUI();
+        switchGatewayTab('register');
+        alert(`Verified as Admin (${foundAdmin.name}). Staff Account Registration is now UNLOCKED.`);
+      } else {
+        alert('Unauthorized! Enter valid Admin credentials to unlock staff account creation.');
+      }
+    }
+
+    function updateAdminCapacityUI() {
+      const countDisplay = document.getElementById('admin-count-display');
+      const regBtn = document.getElementById('gt-adminreg-btn');
+      countDisplay.innerText = `${adminAccounts.length} / 3 Registered`;
+
+      if (adminAccounts.length >= 3) {
+        regBtn.disabled = true;
+        regBtn.innerText = "Admin Registration Full (Max 3 Reached)";
+        regBtn.className = "w-full bg-gray-400 dark:bg-gray-700 text-white font-bold py-2.5 rounded shadow text-xs mt-2 cursor-not-allowed";
+      } else {
+        regBtn.disabled = false;
+        regBtn.innerText = "Create Admin Account";
+        regBtn.className = "w-full bg-brand-blue hover:bg-brand-navy text-white font-bold py-2.5 rounded shadow transition text-xs mt-2";
+      }
+    }
+
+    function renderAdminAccountsTable() {
+      const tbody = document.getElementById('admin-accounts-table');
+      tbody.innerHTML = '';
+
+      if (adminAccounts.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="p-3 text-center text-gray-400">No Admin accounts registered yet.</td></tr>';
+        return;
+      }
+
+      adminAccounts.forEach((a, index) => {
+        tbody.innerHTML += `
+          <tr>
+            <td class="p-2 font-bold text-gray-800 dark:text-gray-200">${a.name}</td>
+            <td class="p-2 text-brand-blue dark:text-brand-gold">${a.username}</td>
+            <td class="p-2"><span class="bg-green-100 dark:bg-green-950/60 text-green-700 dark:text-green-400 font-bold px-2 py-0.5 rounded text-[10px]">Active Admin ${index + 1}</span></td>
+            <td class="p-2 text-right">
+              <button onclick="removeAdminAccount('${a.username}')" class="text-red-500 hover:underline font-bold">Delete Account</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function removeAdminAccount(username) {
+      if (!currentUser) { alert('Admin privilege required.'); return; }
+      if (confirm(`Are you sure you want to delete Admin account "${username}"?`)) {
+        adminAccounts = adminAccounts.filter(a => a.username !== username);
+        localStorage.setItem('pmv_admin_accounts', JSON.stringify(adminAccounts));
+
+        if (currentUser && currentUser.username === username) {
+          logoutAdmin();
+        }
+
+        renderAdminAccountsTable();
+        updateAdminCapacityUI();
+        updateMetrics();
+      }
+    }
+
+    function updateRegistrationLockUI() {
+      const notice = document.getElementById('registration-locked-notice');
+      const fields = document.getElementById('registration-fields');
+      const submitBtn = document.getElementById('gt-reg-submit-btn');
+
+      if (registrationUnlocked) {
+        notice.className = "bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 p-3 rounded-lg text-xs text-green-800 dark:text-green-200 flex items-center";
+        notice.innerHTML = `<i class="fas fa-lock-open text-green-600 mr-2 text-base"></i><span>Account Registration is <strong>UNLOCKED</strong> by Admin. Staff may register now.</span>`;
+        fields.classList.remove('opacity-50', 'pointer-events-none');
+        submitBtn.disabled = false;
+      } else {
+        notice.className = "bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 p-3 rounded-lg text-xs text-amber-800 dark:text-amber-200 flex items-center";
+        notice.innerHTML = `<i class="fas fa-lock text-amber-600 mr-2 text-base"></i><span>Account Creation is <strong>LOCKED</strong>. An Admin must log in and unlock access first.</span>`;
+        fields.classList.add('opacity-50', 'pointer-events-none');
+        submitBtn.disabled = true;
+      }
+    }
+
+    function handleGatewayStaffAuth(e) {
+      e.preventDefault();
+      const staffId = document.getElementById('gt-staff-id').value.trim();
+      const staff = staffMembers.find(s => s.id === staffId && s.status === 'approved');
+
+      if (!staff) {
+        alert('Invalid or Unapproved Staff ID! Please check your ID or request an Admin to approve your account.');
+        return;
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+      const nowTime = new Date().toLocaleTimeString();
+      staff.lastLogin = `${today} ${nowTime}`;
+      if (!staff.attendance) staff.attendance = {};
+      staff.attendance[today] = `Present (${nowTime})`;
+
+      activeSeller = { id: staff.id, name: staff.name };
+      localStorage.setItem('pmv_active_seller', JSON.stringify(activeSeller));
+      localStorage.setItem('pmv_staff', JSON.stringify(staffMembers));
+
+      updateAuthStatusUI();
+      updateActiveSellerDisplay();
+      renderStaffTables();
+      hideGateway();
+      switchTab('pos');
+      alert(`Welcome ${staff.name}! Attendance marked for today.`);
+    }
+
+    function handleGatewayStaffRegister(e) {
+      e.preventDefault();
+      if (!registrationUnlocked) {
+        alert('Account creation is locked by Admin!');
+        return;
+      }
+
+      const newStaff = {
+        tempId: 'PENDING-' + Date.now().toString().slice(-4),
+        id: 'UNASSIGNED',
+        name: document.getElementById('gt-reg-name').value,
+        dob: document.getElementById('gt-reg-dob').value,
+        idType: document.getElementById('gt-reg-idtype').value,
+        idNumber: document.getElementById('gt-reg-idnum').value,
+        phone: document.getElementById('gt-reg-phone').value,
+        email: document.getElementById('gt-reg-email').value,
+        address: document.getElementById('gt-reg-address').value,
+        status: 'pending',
+        lastLogin: 'Never',
+        attendance: {}
+      };
+
+      staffMembers.push(newStaff);
+      localStorage.setItem('pmv_staff', JSON.stringify(staffMembers));
+      alert('Registration submitted successfully! Request an Admin to log in, approve your account, and assign your Staff ID.');
+
+      switchGatewayTab('staff');
+      renderStaffTables();
+      updateMetrics();
+    }
+
+    function updateActiveSellerDisplay() {
+      const el = document.getElementById('active-seller-display');
+      if (activeSeller) {
+        el.innerText = `${activeSeller.name} (${activeSeller.id})`;
+      } else {
+        el.innerText = 'None';
+      }
+    }
+
+    function switchTab(tab) {
+      if (tab === 'admin' && !currentUser) {
+        showGateway();
+        switchGatewayTab('admin-login');
+        return;
+      }
+      document.getElementById('view-pos').classList.toggle('hidden', tab !== 'pos');
+      document.getElementById('view-admin').classList.toggle('hidden', tab !== 'admin');
+    }
+
+    function checkAdminAccess() {
+      if (currentUser) {
+        switchTab('admin');
+      } else {
+        showGateway();
+        switchGatewayTab('admin-login');
+      }
+    }
+
+    function updateAuthStatusUI() {
+      const container = document.getElementById('auth-status-container');
+      let html = '';
+
+      if (currentUser) {
+        html += `<span class="text-brand-gold font-semibold mr-2">[Admin] ${currentUser.name || currentUser.username}</span>
+                 <button onclick="logoutAdmin()" class="text-red-400 hover:underline mr-3"><i class="fas fa-sign-out-alt"></i> Exit Admin</button>`;
+      } else {
+        html += `<button onclick="showGateway(); switchGatewayTab('admin-login');" class="text-brand-gold font-bold hover:underline mr-3"><i class="fas fa-lock mr-1"></i> Admin Login</button>`;
+      }
+
+      if (activeSeller) {
+        html += `<span class="pl-2 border-l border-gray-600 text-gray-300">Seller: <strong class="text-white">${activeSeller.name}</strong> <button onclick="logoutStaff()" class="text-red-300 text-[10px] ml-1 underline">Exit</button></span>`;
+      } else {
+        html += `<button onclick="showGateway(); switchGatewayTab('staff');" class="text-white hover:underline"><i class="fas fa-cash-register mr-1"></i> Staff Login</button>`;
+      }
+
+      container.innerHTML = html;
+    }
+
+    function logoutAdmin() {
+      currentUser = null;
+      localStorage.removeItem('pmv_user');
+      updateAuthStatusUI();
+      switchTab('pos');
+    }
+
+    function logoutStaff() {
+      activeSeller = null;
+      localStorage.removeItem('pmv_active_seller');
+      updateAuthStatusUI();
+      updateActiveSellerDisplay();
+      showGateway();
+    }
+
+    // ADMIN-ONLY DATA CLEARING FUNCTIONS
+    function adminClearSalesLog() {
+      if (!currentUser) { alert('Unauthorized! Admin login required to clear sales records.'); return; }
+      if (confirm('SECURITY WARNING: Are you sure you want to permanently clear all recorded sales logs? This action cannot be undone.')) {
+        salesHistory = [];
+        localStorage.setItem('pmv_sales', JSON.stringify(salesHistory));
+        renderSalesLog();
+        updateMetrics();
+        alert('Sales logs have been cleared successfully by Admin.');
+      }
+    }
+
+    function adminClearProducts() {
+      if (!currentUser) { alert('Unauthorized! Admin login required.'); return; }
+      if (confirm('Are you sure you want to clear all inventory products?')) {
+        products = [];
+        localStorage.setItem('pmv_products', JSON.stringify(products));
+        renderAdminProducts();
+        renderPosProducts();
+        updateMetrics();
+        alert('Inventory products cleared by Admin.');
+      }
+    }
+
+    function adminClearStaff() {
+      if (!currentUser) { alert('Unauthorized! Admin login required.'); return; }
+      if (confirm('Are you sure you want to clear all staff members?')) {
+        staffMembers = [];
+        localStorage.setItem('pmv_staff', JSON.stringify(staffMembers));
+        renderStaffTables();
+        updateMetrics();
+        alert('Staff members cleared by Admin.');
+      }
+    }
+
+    function adminFullSystemReset() {
+      if (!currentUser) { alert('Unauthorized! Admin login required.'); return; }
+      if (confirm('CRITICAL WARNING: This will perform a full factory reset of all system data (Admin accounts, staff, products, and sales logs). Proceed?')) {
+        localStorage.clear();
+        alert('System memory wiped completely. The application will now reload.');
+        location.reload();
+      }
+    }
+
+    // HDMI MEDIA CONTROL & PROJECTION LOGIC
+    function openMediaControlModal() {
+      document.getElementById('modal-media-control').classList.remove('hidden');
+      document.getElementById('media-video-src').value = mediaConfig.videoSrc || '';
+      document.getElementById('media-image-src').value = mediaConfig.imageSrc || '';
+      document.getElementById('media-audio-src').value = mediaConfig.audioSrc || '';
+    }
+
+    function closeMediaControlModal() {
+      document.getElementById('modal-media-control').classList.add('hidden');
+    }
+
+    function handleFileSelect(event, targetInputId) {
+      const file = event.target.files[0];
+      if (file) {
+        const url = URL.createObjectURL(file);
+        document.getElementById(targetInputId).value = url;
+      }
+    }
+
+    function handleMediaSourceSubmit(e) {
+      e.preventDefault();
+      mediaConfig.videoSrc = document.getElementById('media-video-src').value.trim();
+      mediaConfig.imageSrc = document.getElementById('media-image-src').value.trim();
+      mediaConfig.audioSrc = document.getElementById('media-audio-src').value.trim();
+
+      localStorage.setItem('pmv_media_config', JSON.stringify(mediaConfig));
+      initTVMediaProjection();
+      closeMediaControlModal();
+      alert('Media cast configuration updated for connected HDMI TV Screen!');
+    }
+
+    function initTVMediaProjection() {
+      const videoEl = document.getElementById('tv-video-player');
+      const imageEl = document.getElementById('tv-image-player');
+      const audioEl = document.getElementById('tv-audio-player');
+      const idleEl = document.getElementById('tv-idle-player');
+      const showcaseList = document.getElementById('tv-showcase-list');
+
+      // Reset visibilities
+      videoEl.classList.add('hidden');
+      imageEl.classList.add('hidden');
+      idleEl.classList.add('hidden');
+
+      let hasVisual = false;
+
+      // Video source priority
+      if (mediaConfig.videoSrc) {
+        videoEl.src = mediaConfig.videoSrc;
+        videoEl.classList.remove('hidden');
+        videoEl.play().catch(e => console.log('Autoplay handled:', e));
+        hasVisual = true;
+      } else if (mediaConfig.imageSrc) {
+        imageEl.src = mediaConfig.imageSrc;
+        imageEl.classList.remove('hidden');
+        hasVisual = true;
+      }
+
+      if (!hasVisual) {
+        idleEl.classList.remove('hidden');
+      }
+
+      // Audio source
+      if (mediaConfig.audioSrc) {
+        audioEl.src = mediaConfig.audioSrc;
+        audioEl.play().catch(e => console.log('Audio autoplay handled:', e));
+      } else {
+        audioEl.removeAttribute('src');
+      }
+
+      // Populate TV showcase list with live inventory items
+      showcaseList.innerHTML = '';
+      products.forEach(p => {
+        showcaseList.innerHTML += `
+          <div class="bg-brand-navy/60 p-3 rounded-lg border border-brand-gold/20 flex justify-between items-center">
+            <div>
+              <p class="font-bold text-white text-xs">${p.name}</p>
+              <p class="text-[10px] text-gray-300 uppercase">${p.category}</p>
+            </div>
+            <div class="text-right">
+              <p class="font-bold text-brand-gold text-sm">GH₵ ${p.price.toFixed(2)}</p>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function toggleForceTVMode() {
+      document.body.classList.toggle('force-tv-display');
+    }
+
+    // QR / BARCODE SCANNER LOGIC
+    function openScannerModal() {
+      document.getElementById('modal-scanner').classList.remove('hidden');
+      document.getElementById('scanner-result-box').classList.add('hidden');
+      document.getElementById('scanner-input').value = '';
+    }
+
+    function closeScannerModal() {
+      document.getElementById('modal-scanner').classList.add('hidden');
+    }
+
+    function handleManualScan(e) {
+      e.preventDefault();
+      const codeInput = document.getElementById('scanner-input').value.trim().toLowerCase();
+      const found = products.find(p => (p.code && p.code.toLowerCase() === codeInput) || p.id === codeInput);
+      const resultBox = document.getElementById('scanner-result-box');
+
+      resultBox.classList.remove('hidden');
+
+      if (found) {
+        const usd = (found.price / RATES.USD).toFixed(2);
+        const gbp = (found.price / RATES.GBP).toFixed(2);
+        const eur = (found.price / RATES.EUR).toFixed(2);
+
+        resultBox.innerHTML = `
+          <div class="space-y-2 text-xs">
+            <div class="flex justify-between items-center border-b dark:border-gray-700 pb-1">
+              <span class="font-bold text-gray-800 dark:text-gray-100">${found.name}</span>
+              <span class="bg-brand-blue text-white font-mono px-2 py-0.5 rounded text-[10px]">${found.code || found.id}</span>
+            </div>
+            <p class="text-brand-gold font-bold text-base">GH₵ ${found.price.toFixed(2)}</p>
+            <p class="text-gray-500 dark:text-gray-400 text-[10px]">$${usd} | £${gbp} | €${eur}</p>
+            <button onclick="addToCart('${found.id}'); closeScannerModal();" class="w-full bg-brand-gold text-white font-bold py-2 rounded shadow mt-2 hover:bg-brand-goldlight">
+              <i class="fas fa-cart-plus mr-1"></i> Add To Sale Cart
+            </button>
+          </div>
+        `;
+      } else {
+        resultBox.innerHTML = `
+          <div class="text-xs text-red-600 dark:text-red-400 font-bold text-center">
+            <i class="fas fa-exclamation-circle mr-1"></i> No matching product found for code: "${codeInput}"
+          </div>
+        `;
+      }
+    }
+
+    // STAFF APPROVALS & ROSTER
+    function approveStaff(tempId) {
+      if (!currentUser) { alert('Admin login required.'); return; }
+      const assignedId = prompt('Assign a unique Staff ID for this employee:', 'PMV-' + Math.floor(100 + Math.random() * 900));
+      if (!assignedId) return;
+
+      const staff = staffMembers.find(s => s.tempId === tempId || s.id === tempId);
+      if (staff) {
+        staff.id = assignedId;
+        staff.status = 'approved';
+        localStorage.setItem('pmv_staff', JSON.stringify(staffMembers));
+        renderStaffTables();
+        updateMetrics();
+        alert(`Staff member approved with ID: ${assignedId}`);
+      }
+    }
+
+    function removeStaff(id) {
+      if (!currentUser) { alert('Admin privilege required.'); return; }
+      if (confirm(`Are you sure you want to remove staff ${id}? Access will be revoked immediately.`)) {
+        staffMembers = staffMembers.filter(s => s.id !== id && s.tempId !== id);
+        localStorage.setItem('pmv_staff', JSON.stringify(staffMembers));
+        if (activeSeller && activeSeller.id === id) logoutStaff();
+        renderStaffTables();
+        updateMetrics();
+      }
+    }
+
+    function openManualStaffModal() {
+      if (!currentUser) { alert('Admin login required.'); return; }
+      document.getElementById('modal-manual-staff').classList.remove('hidden');
+    }
+
+    function closeManualStaffModal() {
+      document.getElementById('modal-manual-staff').classList.add('hidden');
+    }
+
+    function handleManualStaffAdd(e) {
+      e.preventDefault();
+      if (!currentUser) { alert('Admin login required.'); return; }
+      const newStaff = {
+        id: document.getElementById('manual-id').value.trim(),
+        name: document.getElementById('manual-name').value,
+        phone: document.getElementById('manual-phone').value,
+        dob: 'N/A',
+        idType: 'Manual Admin Entry',
+        idNumber: 'N/A',
+        email: 'N/A',
+        address: 'N/A',
+        status: 'approved',
+        lastLogin: 'Never',
+        attendance: {}
+      };
+
+      staffMembers.push(newStaff);
+      localStorage.setItem('pmv_staff', JSON.stringify(staffMembers));
+      closeManualStaffModal();
+      renderStaffTables();
+      updateMetrics();
+      e.target.reset();
+    }
+
+    function renderStaffTables() {
+      const pendingTbody = document.getElementById('pending-staff-table');
+      const approvedTbody = document.getElementById('approved-staff-table');
+      const today = new Date().toISOString().split('T')[0];
+
+      pendingTbody.innerHTML = '';
+      approvedTbody.innerHTML = '';
+
+      const pending = staffMembers.filter(s => s.status === 'pending');
+      const approved = staffMembers.filter(s => s.status === 'approved');
+
+      if (pending.length === 0) {
+        pendingTbody.innerHTML = '<tr><td colspan="6" class="p-3 text-center text-gray-400">No pending staff registrations.</td></tr>';
+      } else {
+        pending.forEach(s => {
+          pendingTbody.innerHTML += `
+            <tr>
+              <td class="p-2 font-bold">${s.name}</td>
+              <td class="p-2">${s.dob}</td>
+              <td class="p-2">${s.idType}: <strong>${s.idNumber}</strong></td>
+              <td class="p-2">${s.phone} / ${s.email}</td>
+              <td class="p-2">${s.address}</td>
+              <td class="p-2 text-right">
+                <button onclick="approveStaff('${s.tempId}')" class="bg-green-600 text-white px-2 py-1 rounded text-[10px] font-bold mr-1">Approve</button>
+                <button onclick="removeStaff('${s.tempId}')" class="bg-red-500 text-white px-2 py-1 rounded text-[10px]">Reject</button>
+              </td>
+            </tr>
+          `;
+        });
+      }
+
+      if (approved.length === 0) {
+        approvedTbody.innerHTML = '<tr><td colspan="6" class="p-3 text-center text-gray-400">No approved staff in system.</td></tr>';
+      } else {
+        approved.forEach(s => {
+          const isPresent = s.attendance && s.attendance[today];
+          const statusBadge = isPresent
+            ? `<span class="bg-green-100 dark:bg-green-950/60 text-green-700 dark:text-green-400 font-bold px-2 py-0.5 rounded">PRESENT</span>`
+            : `<span class="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded">Absent Today</span>`;
+
+          approvedTbody.innerHTML += `
+            <tr>
+              <td class="p-2 font-bold text-brand-blue dark:text-brand-gold">${s.id}</td>
+              <td class="p-2 font-semibold">${s.name}</td>
+              <td class="p-2">${s.phone}</td>
+              <td class="p-2">${statusBadge}</td>
+              <td class="p-2 text-gray-500 dark:text-gray-400">${s.lastLogin || 'Never'}</td>
+              <td class="p-2 text-right">
+                <button onclick="removeStaff('${s.id}')" class="text-red-500 hover:underline font-bold">Remove</button>
+              </td>
+            </tr>
+          `;
+        });
+      }
+    }
+
+    // POS & CHECKOUT LOGIC
+    function renderPosProducts() {
+      const grid = document.getElementById('pos-product-grid');
+      const search = document.getElementById('pos-search').value.toLowerCase().trim();
+      grid.innerHTML = '';
+
+      const filtered = products.filter(p =>
+        p.name.toLowerCase().includes(search) ||
+        p.category.toLowerCase().includes(search) ||
+        (p.code && p.code.toLowerCase().includes(search))
+      );
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div class="col-span-full py-12 text-center text-gray-400">No products found matching "${search}".</div>`;
+        return;
+      }
+
+      filtered.forEach(p => {
+        const usd = (p.price / RATES.USD).toFixed(2);
+        const gbp = (p.price / RATES.GBP).toFixed(2);
+        const eur = (p.price / RATES.EUR).toFixed(2);
+
+        const imageHTML = p.image 
+          ? `<img src="${p.image}" alt="${p.name}" class="w-full h-32 object-cover rounded-lg mb-2">`
+          : `<div class="w-full h-32 bg-gray-100 dark:bg-gray-800 rounded-lg mb-2 flex items-center justify-center text-gray-300 dark:text-gray-600"><i class="fas fa-image text-3xl"></i></div>`;
+
+        grid.innerHTML += `
+          <div onclick="addToCart('${p.id}')" class="bg-white dark:bg-brand-darkcard p-4 rounded-xl shadow-sm border border-gray-200 dark:border-brand-darkborder hover:shadow-md cursor-pointer transition flex flex-col justify-between">
+            <div>
+              ${imageHTML}
+              <div class="flex justify-between items-center">
+                <span class="text-[10px] font-bold bg-brand-blue/10 text-brand-blue dark:bg-brand-gold/10 dark:text-brand-gold px-2 py-0.5 rounded uppercase">${p.category}</span>
+                <span class="text-[10px] font-mono text-gray-400">${p.code || 'NO-SKU'}</span>
+              </div>
+              <h3 class="font-bold text-gray-800 dark:text-gray-100 text-sm mt-2">${p.name}</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">In Stock: ${p.stock}</p>
+            </div>
+            <div class="mt-3 border-t dark:border-gray-700 pt-2">
+              <p class="text-brand-gold font-bold text-base">GH₵ ${p.price.toFixed(2)}</p>
+              <p class="text-[10px] text-gray-400">$${usd} | £${gbp} | €${eur}</p>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function addToCart(id) {
+      const prod = products.find(p => p.id === id);
+      if (!prod || prod.stock <= 0) { alert('Item out of stock!'); return; }
+
+      const existing = cart.find(c => c.id === id);
+      if (existing) {
+        if (existing.qty < prod.stock) existing.qty++;
+      } else {
+        cart.push({ ...prod, qty: 1 });
+      }
+      renderCart();
+    }
+
+    function renderCart() {
+      const container = document.getElementById('cart-items');
+      if (cart.length === 0) {
+        container.innerHTML = '<p class="text-sm text-gray-400 text-center py-8">Cart is empty</p>';
+        updateCartTotals(0);
+        return;
+      }
+
+      container.innerHTML = '';
+      let subtotal = 0;
+
+      cart.forEach(item => {
+        const total = item.price * item.qty;
+        subtotal += total;
+        container.innerHTML += `
+          <div class="flex items-center justify-between bg-gray-50 dark:bg-gray-800/80 p-2 rounded-lg text-xs">
+            <div class="flex-1 pr-2">
+              <p class="font-bold text-gray-800 dark:text-gray-200">${item.name}</p>
+              <p class="text-gray-500 dark:text-gray-400">GH₵ ${item.price.toFixed(2)} x ${item.qty}</p>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button onclick="updateQty('${item.id}', -1)" class="w-5 h-5 bg-gray-200 dark:bg-gray-700 dark:text-white rounded text-center font-bold">-</button>
+              <span class="dark:text-white">${item.qty}</span>
+              <button onclick="updateQty('${item.id}', 1)" class="w-5 h-5 bg-gray-200 dark:bg-gray-700 dark:text-white rounded text-center font-bold">+</button>
+            </div>
+          </div>
+        `;
+      });
+
+      updateCartTotals(subtotal);
+    }
+
+    function updateQty(id, change) {
+      const item = cart.find(c => c.id === id);
+      if (!item) return;
+      item.qty += change;
+      if (item.qty <= 0) cart = cart.filter(c => c.id !== id);
+      renderCart();
+    }
+
+    function clearCart() {
+      cart = [];
+      renderCart();
+    }
+
+    function updateCartTotals(totalGhs) {
+      document.getElementById('summary-subtotal').innerText = `GH₵ ${totalGhs.toFixed(2)}`;
+      document.getElementById('summary-total-ghs').innerText = `GH₵ ${totalGhs.toFixed(2)}`;
+
+      document.getElementById('conv-usd').innerText = `$${(totalGhs / RATES.USD).toFixed(2)}`;
+      document.getElementById('conv-gbp').innerText = `£${(totalGhs / RATES.GBP).toFixed(2)}`;
+      document.getElementById('conv-eur').innerText = `€${(totalGhs / RATES.EUR).toFixed(2)}`;
+    }
+
+    function processCheckout() {
+      if (!activeSeller) {
+        alert('Security Alert: No seller currently logged in! Please login with your Staff ID.');
+        showGateway();
+        switchGatewayTab('staff');
+        return;
+      }
+
+      if (cart.length === 0) { alert('Cart is empty!'); return; }
+
+      const totalGhs = cart.reduce((acc, c) => acc + (c.price * c.qty), 0);
+
+      cart.forEach(item => {
+        const prod = products.find(p => p.id === item.id);
+        if (prod) prod.stock -= item.qty;
+      });
+
+      const saleRecord = {
+        id: Date.now(),
+        total: totalGhs,
+        date: new Date().toLocaleString(),
+        sellerName: activeSeller.name,
+        sellerId: activeSeller.id
+      };
+
+      salesHistory.push(saleRecord);
+      localStorage.setItem('pmv_products', JSON.stringify(products));
+      localStorage.setItem('pmv_sales', JSON.stringify(salesHistory));
+
+      document.getElementById('receipt-date').innerText = saleRecord.date;
+      document.getElementById('receipt-seller').innerText = `${activeSeller.name} (${activeSeller.id})`;
+
+      const receiptList = document.getElementById('receipt-items-list');
+      receiptList.innerHTML = '';
+      cart.forEach(c => {
+        receiptList.innerHTML += `<div class="flex justify-between"><span>${c.name} x${c.qty}</span><span>GH₵ ${(c.price * c.qty).toFixed(2)}</span></div>`;
+      });
+      document.getElementById('receipt-total-ghs').innerText = `GH₵ ${totalGhs.toFixed(2)}`;
+      document.getElementById('receipt-total-usd').innerText = `$${(totalGhs / RATES.USD).toFixed(2)}`;
+      document.getElementById('receipt-total-gbp').innerText = `£${(totalGhs / RATES.GBP).toFixed(2)}`;
+      document.getElementById('receipt-total-eur').innerText = `€${(totalGhs / RATES.EUR).toFixed(2)}`;
+
+      window.print();
+
+      clearCart();
+      renderPosProducts();
+      renderAdminProducts();
+      renderSalesLog();
+      updateMetrics();
+      initTVMediaProjection();
+    }
+
+    function renderSalesLog() {
+      const tbody = document.getElementById('sales-log-table');
+      tbody.innerHTML = '';
+
+      if (salesHistory.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="p-3 text-center text-gray-400">No recorded sales yet.</td></tr>';
+        return;
+      }
+
+      salesHistory.slice().reverse().forEach(s => {
+        tbody.innerHTML += `
+          <tr>
+            <td class="p-2 text-gray-500 dark:text-gray-400">${s.date}</td>
+            <td class="p-2 font-bold text-gray-800 dark:text-gray-200">${s.sellerName || 'Unknown'}</td>
+            <td class="p-2 text-brand-blue dark:text-brand-gold">${s.sellerId || 'N/A'}</td>
+            <td class="p-2 text-green-600 dark:text-green-400 font-bold">GH₵ ${s.total.toFixed(2)}</td>
+          </tr>
+        `;
+      });
+    }
+
+    // ADMIN INVENTORY MANAGEMENT
+    function renderAdminProducts() {
+      const tbody = document.getElementById('admin-product-table');
+      tbody.innerHTML = '';
+
+      if (products.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="p-3 text-center text-gray-400">No products in inventory.</td></tr>';
+        return;
+      }
+
+      products.forEach(p => {
+        const usd = (p.price / RATES.USD).toFixed(2);
+        const gbp = (p.price / RATES.GBP).toFixed(2);
+        const eur = (p.price / RATES.EUR).toFixed(2);
+        const lowStock = p.stock <= 3;
+
+        tbody.innerHTML += `
+          <tr>
+            <td class="p-4 font-mono text-xs font-bold text-brand-blue dark:text-brand-gold">${p.code || p.id}</td>
+            <td class="p-4 font-bold text-gray-800 dark:text-gray-200">
+              <div class="flex items-center space-x-3">
+                ${p.image ? `<img src="${p.image}" class="w-8 h-8 object-cover rounded shadow-sm">` : `<div class="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center text-gray-400"><i class="fas fa-image text-xs"></i></div>`}
+                <span>${p.name}</span>
+              </div>
+            </td>
+            <td class="p-4"><span class="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-xs px-2 py-1 rounded">${p.category}</span></td>
+            <td class="p-4 text-brand-gold font-bold">GH₵ ${p.price.toFixed(2)}</td>
+            <td class="p-4 text-xs text-gray-500 dark:text-gray-400">$${usd} / £${gbp} / €${eur}</td>
+            <td class="p-4">
+              <span class="${lowStock ? 'text-red-600 font-bold' : ''}">${p.stock}</span>
+              ${lowStock ? '<span class="ml-1 text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-bold">LOW</span>' : ''}
+            </td>
+            <td class="p-4 text-right whitespace-nowrap">
+              <button onclick="quickRestockPrompt('${p.id}')" class="text-green-600 hover:text-green-800 dark:text-green-400 text-xs font-bold mr-3"><i class="fas fa-boxes-packing"></i> Restock</button>
+              <button onclick="openProductModal('${p.id}')" class="text-brand-blue dark:text-brand-gold hover:underline text-xs font-bold mr-3"><i class="fas fa-edit"></i> Edit</button>
+              <button onclick="deleteProduct('${p.id}')" class="text-red-500 hover:text-red-700 text-xs font-bold"><i class="fas fa-trash"></i> Delete</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    // Product Image Upload Handler
+    function handleProductImageUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const base64Image = e.target.result;
+        document.getElementById('prod-image').value = base64Image;
+        document.getElementById('prod-image-preview-src').src = base64Image;
+        document.getElementById('prod-image-preview').classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearProductImage() {
+      document.getElementById('prod-image').value = '';
+      document.getElementById('prod-image-file').value = '';
+      document.getElementById('prod-image-preview').classList.add('hidden');
+    }
+
+    // Opens the product modal. Pass a product id to EDIT an existing product
+    function openProductModal(id) {
+      if (!currentUser) { alert('Admin login required.'); return; }
+
+      const modal = document.getElementById('modal-product');
+      const title = document.getElementById('product-modal-title');
+      const subtitle = document.getElementById('product-modal-subtitle');
+      const submitBtn = document.getElementById('product-modal-submit-btn');
+      const restockBox = document.getElementById('restock-box');
+      const codeField = document.getElementById('prod-code');
+
+      if (id) {
+        const prod = products.find(p => p.id === id);
+        if (!prod) { alert('Product not found.'); return; }
+
+        editingProductId = id;
+        document.getElementById('prod-name').value = prod.name;
+        document.getElementById('prod-code').value = prod.code || '';
+        document.getElementById('prod-category').value = prod.category;
+        document.getElementById('prod-price').value = prod.price;
+        document.getElementById('prod-stock').value = prod.stock;
+        document.getElementById('prod-image').value = prod.image || '';
+        document.getElementById('prod-image-file').value = '';
+
+        if (prod.image) {
+          document.getElementById('prod-image-preview-src').src = prod.image;
+          document.getElementById('prod-image-preview').classList.remove('hidden');
+        } else {
+          document.getElementById('prod-image-preview').classList.add('hidden');
+        }
+
+        title.innerHTML = `<i class="fas fa-edit text-brand-gold mr-2"></i> Edit Product / Restock`;
+        subtitle.innerText = `Editing "${prod.name}". Update details or use Quick Restock to add newly arrived stock.`;
+        submitBtn.innerText = 'Save Changes to Product';
+        restockBox.classList.remove('hidden');
+        document.getElementById('restock-qty').value = '';
+        codeField.readOnly = false;
+      } else {
+        editingProductId = null;
+        document.getElementById('prod-name').value = '';
+        document.getElementById('prod-code').value = '';
+        document.getElementById('prod-category').value = '';
+        document.getElementById('prod-price').value = '';
+        document.getElementById('prod-stock').value = '';
+        clearProductImage();
+
+        title.innerHTML = `<i class="fas fa-plus-circle text-brand-gold mr-2"></i> Upload New Product`;
+        subtitle.innerText = 'Fill in the details below to add a brand-new product to the catalog.';
+        submitBtn.innerText = 'Save Product to Inventory';
+        restockBox.classList.add('hidden');
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeProductModal() {
+      document.getElementById('modal-product').classList.add('hidden');
+      editingProductId = null;
+    }
+
+    function applyQuickRestock() {
+      const qtyInput = document.getElementById('restock-qty');
+      const addQty = parseInt(qtyInput.value);
+
+      if (!addQty || addQty <= 0) {
+        alert('Enter a valid quantity greater than 0 to restock.');
+        return;
+      }
+
+      const stockField = document.getElementById('prod-stock');
+      const currentStock = parseInt(stockField.value) || 0;
+      stockField.value = currentStock + addQty;
+      qtyInput.value = '';
+      qtyInput.focus();
+    }
+
+    function quickRestockPrompt(id) {
+      if (!currentUser) { alert('Admin login required.'); return; }
+      const prod = products.find(p => p.id === id);
+      if (!prod) { alert('Product not found.'); return; }
+
+      const input = prompt(`Restocking "${prod.name}"\nCurrent stock: ${prod.stock}\n\nHow many units are being added?`, '10');
+      if (input === null) return;
+
+      const addQty = parseInt(input);
+      if (!addQty || addQty <= 0) {
+        alert('Please enter a valid positive number.');
+        return;
+      }
+
+      prod.stock += addQty;
+      localStorage.setItem('pmv_products', JSON.stringify(products));
+      renderAdminProducts();
+      renderPosProducts();
+      updateMetrics();
+      initTVMediaProjection();
+      alert(`Restocked ${addQty} units. "${prod.name}" now has ${prod.stock} in stock.`);
+    }
+
+    function handleProductUpload(e) {
+      e.preventDefault();
+      if (!currentUser) { alert('Admin privilege required.'); return; }
+
+      const name = document.getElementById('prod-name').value;
+      const code = document.getElementById('prod-code').value.trim();
+      const category = document.getElementById('prod-category').value;
+      const price = parseFloat(document.getElementById('prod-price').value);
+      const stock = parseInt(document.getElementById('prod-stock').value);
+      const image = document.getElementById('prod-image').value;
+
+      if (editingProductId) {
+        const prod = products.find(p => p.id === editingProductId);
+        if (!prod) { alert('Product no longer exists.'); closeProductModal(); return; }
+
+        const duplicate = products.find(p => p.id !== editingProductId && p.code && p.code.toLowerCase() === code.toLowerCase());
+        if (duplicate) {
+          alert('That SKU / barcode is already used by another product. Please use a unique code.');
+          return;
+        }
+
+        prod.name = name;
+        prod.code = code;
+        prod.category = category;
+        prod.price = price;
+        prod.stock = stock;
+        prod.image = image;
+
+        localStorage.setItem('pmv_products', JSON.stringify(products));
+        alert(`"${prod.name}" updated successfully. Stock is now ${prod.stock}.`);
+      } else {
+        const duplicate = products.find(p => p.code && p.code.toLowerCase() === code.toLowerCase());
+        if (duplicate) {
+          alert('That SKU / barcode is already in use. Please use a unique code.');
+          return;
+        }
+
+        const newProd = { id: Date.now().toString(), code, name, category, price, stock, image };
+        products.push(newProd);
+        localStorage.setItem('pmv_products', JSON.stringify(products));
+        alert(`"${newProd.name}" added to inventory.`);
+      }
+
+      closeProductModal();
+      renderAdminProducts();
+      renderPosProducts();
+      updateMetrics();
+      initTVMediaProjection();
+      e.target.reset();
+    }
+
+    function deleteProduct(id) {
+      if (!currentUser) { alert('Unauthorized! Admin login required.'); return; }
+      if (confirm('Are you sure you want to delete this product?')) {
+        products = products.filter(p => p.id !== id);
+        localStorage.setItem('pmv_products', JSON.stringify(products));
+        renderAdminProducts();
+        renderPosProducts();
+        updateMetrics();
+        initTVMediaProjection();
+      }
+    }
+
+    function updateMetrics() {
+      const totalSales = salesHistory.reduce((acc, s) => acc + s.total, 0);
+      document.getElementById('metric-total-sales').innerText = `GH₵ ${totalSales.toFixed(2)}`;
+      document.getElementById('metric-orders-count').innerText = salesHistory.length;
+      document.getElementById('metric-staff-count').innerText = staffMembers.filter(s => s.status === 'approved').length;
+      document.getElementById('metric-admin-count').innerText = `${adminAccounts.length} / 3 Slots`;
+    }
+  </script>
+</body>
+</html>
