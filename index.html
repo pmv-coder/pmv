@@ -6,6 +6,33 @@
   <title>PROSPHERO MEGALOS VENTURES - POS & Management System</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- ====================================================================
+       FIREBASE (shared cloud database) — makes admin/staff accounts,
+       products, sales and media settings visible on EVERY device instead
+       of only the phone that created them.
+       Fill in YOUR project's values below (Firebase Console → Project
+       Settings → General → "Your apps" → SDK setup and configuration).
+       ==================================================================== -->
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyA7DQFWRPEfTmoT9uEL5DV5AI-ixHVanfE",
+      authDomain: "prosphero-megalos-ventures.firebaseapp.com",
+      projectId: "prosphero-megalos-ventures",
+      storageBucket: "prosphero-megalos-ventures.firebasestorage.app",
+      messagingSenderId: "543874177168",
+      appId: "1:543874177168:web:65f07107bea67e20b1a015",
+      measurementId: "G-7BFQS7S0R3"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    // Every phone reads/writes this one shared document.
+    const businessDocRef = db.collection('pmv_business').doc('shared');
+  </script>
+
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -779,23 +806,26 @@
   <script>
     // System Exchange Rates & State
     const RATES = { USD: 11.14, GBP: 15.18, EUR: 13.02 };
+
+    // These three stay LOCAL to each device on purpose — they represent
+    // "who is currently signed in on THIS phone", not shared business data.
     let currentUser = JSON.parse(localStorage.getItem('pmv_user')) || null;
     let activeSeller = JSON.parse(localStorage.getItem('pmv_active_seller')) || null;
-    let registrationUnlocked = JSON.parse(localStorage.getItem('pmv_reg_unlocked')) || false;
     let isDarkMode = JSON.parse(localStorage.getItem('pmv_theme')) || false;
 
-    // Persistent Admin Accounts List (Strict 3 Max Limit)
-    let adminAccounts = JSON.parse(localStorage.getItem('pmv_admin_accounts')) || [];
+    // Everything below this line is SHARED across every device via Firestore.
+    // The values here are just placeholders shown for a split second before
+    // the first cloud snapshot arrives.
+    let registrationUnlocked = false;
+    let adminAccounts = [];
 
-    // Persistent Products Inventory
-    let products = JSON.parse(localStorage.getItem('pmv_products')) || [
+    let products = [
       { id: '1', code: 'PMV-SKU-1001', name: 'Premium Architectural Layout Pack', category: 'Services', price: 1500.00, stock: 25, image: '' },
       { id: '2', code: 'PMV-SKU-1002', name: 'Corporate Brand Identity Manual', category: 'Design', price: 850.00, stock: 10, image: '' },
       { id: '3', code: 'PMV-SKU-1003', name: 'Executive Desktop Station', category: 'Equipment', price: 3200.00, stock: 5, image: '' }
     ];
 
-    // Persistent Staff Roster
-    let staffMembers = JSON.parse(localStorage.getItem('pmv_staff')) || [
+    let staffMembers = [
       {
         id: 'PMV-101',
         name: 'Kwame Mensah',
@@ -812,22 +842,37 @@
     ];
 
     let cart = [];
-    // Persistent Sales Audit Trail
-    let salesHistory = JSON.parse(localStorage.getItem('pmv_sales')) || [];
+    let salesHistory = [];
 
     // Tracks whether the product modal is in "Add New" or "Edit Existing" mode
     let editingProductId = null;
 
     // HDMI Audio / Video Media Projection State
-    let mediaConfig = JSON.parse(localStorage.getItem('pmv_media_config')) || {
-      videoSrc: '',
-      imageSrc: '',
-      audioSrc: ''
-    };
+    let mediaConfig = { videoSrc: '', imageSrc: '', audioSrc: '' };
 
-    // Initialize App
-    document.addEventListener('DOMContentLoaded', () => {
-      initTheme();
+    // Set to true once the very first cloud snapshot has loaded, so we know
+    // whether to seed the cloud doc (first-ever run) or trust what came back.
+    let cloudReady = false;
+
+    // Writes the current in-memory shared state up to Firestore. Every
+    // device listening to the same document receives the update in
+    // real time (typically well under a second).
+    function persistCloud() {
+      businessDocRef.set({
+        adminAccounts,
+        products,
+        staffMembers,
+        salesHistory,
+        mediaConfig,
+        registrationUnlocked,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true }).catch(err => {
+        console.error('Cloud sync failed:', err);
+        alert('Could not save to the cloud database. Check your internet connection and Firebase configuration. (' + err.message + ')');
+      });
+    }
+
+    function renderAll() {
       updateAuthStatusUI();
       renderPosProducts();
       renderAdminProducts();
@@ -845,6 +890,46 @@
       } else {
         hideGateway();
       }
+    }
+
+    // Subscribes to the shared business document. Fires immediately with
+    // whatever is currently in the cloud, then again every time ANY device
+    // changes the data — that's what makes accounts/products/sales appear
+    // on every phone without re-entering anything.
+    function listenToCloudData() {
+      businessDocRef.onSnapshot(docSnap => {
+        const data = docSnap.data();
+        if (data) {
+          adminAccounts = data.adminAccounts || [];
+          products = data.products || [];
+          staffMembers = data.staffMembers || [];
+          salesHistory = data.salesHistory || [];
+          mediaConfig = data.mediaConfig || { videoSrc: '', imageSrc: '', audioSrc: '' };
+          registrationUnlocked = !!data.registrationUnlocked;
+        } else if (!cloudReady) {
+          // First device ever to connect — seed the cloud with the starter data above.
+          persistCloud();
+        }
+        cloudReady = true;
+        renderAll();
+      }, err => {
+        console.error('Cloud sync error:', err);
+        alert('Lost connection to the cloud database: ' + err.message);
+      });
+    }
+
+    // Initialize App
+    document.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+
+      firebase.auth().signInAnonymously().catch(err => {
+        console.error('Auth failed:', err);
+        alert('Could not connect to the cloud database. Check that Firebase is configured correctly and that Anonymous Sign-In is enabled. (' + err.message + ')');
+      });
+
+      firebase.auth().onAuthStateChanged(user => {
+        if (user) listenToCloudData();
+      });
 
       // Live TV Clock
       setInterval(() => {
@@ -939,7 +1024,7 @@
 
       const newAdmin = { name, username: user, password: pass, dateCreated: new Date().toLocaleDateString() };
       adminAccounts.push(newAdmin);
-      localStorage.setItem('pmv_admin_accounts', JSON.stringify(adminAccounts));
+      persistCloud();
 
       alert(`Admin account created successfully! Total admins registered: ${adminAccounts.length}/3.`);
       updateAdminCapacityUI();
@@ -982,7 +1067,7 @@
 
       if (foundAdmin) {
         registrationUnlocked = true;
-        localStorage.setItem('pmv_reg_unlocked', JSON.stringify(true));
+        persistCloud();
         updateRegistrationLockUI();
         switchGatewayTab('register');
         alert(`Verified as Admin (${foundAdmin.name}). Staff Account Registration is now UNLOCKED.`);
@@ -1034,7 +1119,7 @@
       if (!currentUser) { alert('Admin privilege required.'); return; }
       if (confirm(`Are you sure you want to delete Admin account "${username}"?`)) {
         adminAccounts = adminAccounts.filter(a => a.username !== username);
-        localStorage.setItem('pmv_admin_accounts', JSON.stringify(adminAccounts));
+        persistCloud();
 
         if (currentUser && currentUser.username === username) {
           logoutAdmin();
@@ -1082,7 +1167,7 @@
 
       activeSeller = { id: staff.id, name: staff.name };
       localStorage.setItem('pmv_active_seller', JSON.stringify(activeSeller));
-      localStorage.setItem('pmv_staff', JSON.stringify(staffMembers));
+      persistCloud();
 
       updateAuthStatusUI();
       updateActiveSellerDisplay();
@@ -1115,7 +1200,7 @@
       };
 
       staffMembers.push(newStaff);
-      localStorage.setItem('pmv_staff', JSON.stringify(staffMembers));
+      persistCloud();
       alert('Registration submitted successfully! Request an Admin to log in, approve your account, and assign your Staff ID.');
 
       switchGatewayTab('staff');
@@ -1191,7 +1276,7 @@
       if (!currentUser) { alert('Unauthorized! Admin login required to clear sales records.'); return; }
       if (confirm('SECURITY WARNING: Are you sure you want to permanently clear all recorded sales logs? This action cannot be undone.')) {
         salesHistory = [];
-        localStorage.setItem('pmv_sales', JSON.stringify(salesHistory));
+        persistCloud();
         renderSalesLog();
         updateMetrics();
         alert('Sales logs have been cleared successfully by Admin.');
@@ -1202,7 +1287,7 @@
       if (!currentUser) { alert('Unauthorized! Admin login required.'); return; }
       if (confirm('Are you sure you want to clear all inventory products?')) {
         products = [];
-        localStorage.setItem('pmv_products', JSON.stringify(products));
+        persistCloud();
         renderAdminProducts();
         renderPosProducts();
         updateMetrics();
@@ -1214,7 +1299,7 @@
       if (!currentUser) { alert('Unauthorized! Admin login required.'); return; }
       if (confirm('Are you sure you want to clear all staff members?')) {
         staffMembers = [];
-        localStorage.setItem('pmv_staff', JSON.stringify(staffMembers));
+        persistCloud();
         renderStaffTables();
         updateMetrics();
         alert('Staff members cleared by Admin.');
@@ -1223,9 +1308,16 @@
 
     function adminFullSystemReset() {
       if (!currentUser) { alert('Unauthorized! Admin login required.'); return; }
-      if (confirm('CRITICAL WARNING: This will perform a full factory reset of all system data (Admin accounts, staff, products, and sales logs). Proceed?')) {
+      if (confirm('CRITICAL WARNING: This will permanently wipe ALL system data for EVERY device (Admin accounts, staff, products, and sales logs). Proceed?')) {
+        adminAccounts = [];
+        products = [];
+        staffMembers = [];
+        salesHistory = [];
+        mediaConfig = { videoSrc: '', imageSrc: '', audioSrc: '' };
+        registrationUnlocked = false;
+        persistCloud();
         localStorage.clear();
-        alert('System memory wiped completely. The application will now reload.');
+        alert('System data wiped completely for all devices. The application will now reload.');
         location.reload();
       }
     }
@@ -1256,7 +1348,7 @@
       mediaConfig.imageSrc = document.getElementById('media-image-src').value.trim();
       mediaConfig.audioSrc = document.getElementById('media-audio-src').value.trim();
 
-      localStorage.setItem('pmv_media_config', JSON.stringify(mediaConfig));
+      persistCloud();
       initTVMediaProjection();
       closeMediaControlModal();
       alert('Media cast configuration updated for connected HDMI TV Screen!');
@@ -1377,7 +1469,7 @@
       if (staff) {
         staff.id = assignedId;
         staff.status = 'approved';
-        localStorage.setItem('pmv_staff', JSON.stringify(staffMembers));
+        persistCloud();
         renderStaffTables();
         updateMetrics();
         alert(`Staff member approved with ID: ${assignedId}`);
@@ -1388,7 +1480,7 @@
       if (!currentUser) { alert('Admin privilege required.'); return; }
       if (confirm(`Are you sure you want to remove staff ${id}? Access will be revoked immediately.`)) {
         staffMembers = staffMembers.filter(s => s.id !== id && s.tempId !== id);
-        localStorage.setItem('pmv_staff', JSON.stringify(staffMembers));
+        persistCloud();
         if (activeSeller && activeSeller.id === id) logoutStaff();
         renderStaffTables();
         updateMetrics();
@@ -1422,7 +1514,7 @@
       };
 
       staffMembers.push(newStaff);
-      localStorage.setItem('pmv_staff', JSON.stringify(staffMembers));
+      persistCloud();
       closeManualStaffModal();
       renderStaffTables();
       updateMetrics();
@@ -1624,8 +1716,8 @@
       };
 
       salesHistory.push(saleRecord);
-      localStorage.setItem('pmv_products', JSON.stringify(products));
-      localStorage.setItem('pmv_sales', JSON.stringify(salesHistory));
+      persistCloud();
+      persistCloud();
 
       document.getElementById('receipt-date').innerText = saleRecord.date;
       document.getElementById('receipt-seller').innerText = `${activeSeller.name} (${activeSeller.id})`;
@@ -1825,7 +1917,7 @@
       }
 
       prod.stock += addQty;
-      localStorage.setItem('pmv_products', JSON.stringify(products));
+      persistCloud();
       renderAdminProducts();
       renderPosProducts();
       updateMetrics();
@@ -1861,7 +1953,7 @@
         prod.stock = stock;
         prod.image = image;
 
-        localStorage.setItem('pmv_products', JSON.stringify(products));
+        persistCloud();
         alert(`"${prod.name}" updated successfully. Stock is now ${prod.stock}.`);
       } else {
         const duplicate = products.find(p => p.code && p.code.toLowerCase() === code.toLowerCase());
@@ -1872,7 +1964,7 @@
 
         const newProd = { id: Date.now().toString(), code, name, category, price, stock, image };
         products.push(newProd);
-        localStorage.setItem('pmv_products', JSON.stringify(products));
+        persistCloud();
         alert(`"${newProd.name}" added to inventory.`);
       }
 
@@ -1888,7 +1980,7 @@
       if (!currentUser) { alert('Unauthorized! Admin login required.'); return; }
       if (confirm('Are you sure you want to delete this product?')) {
         products = products.filter(p => p.id !== id);
-        localStorage.setItem('pmv_products', JSON.stringify(products));
+        persistCloud();
         renderAdminProducts();
         renderPosProducts();
         updateMetrics();
